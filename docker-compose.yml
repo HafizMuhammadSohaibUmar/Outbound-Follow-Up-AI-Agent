@@ -1,0 +1,13 @@
+services:
+  outbound-followup-agent:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "8003:8003"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8003/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
