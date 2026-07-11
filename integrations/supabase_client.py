@@ -8,6 +8,12 @@ from config import get_settings
 from models.campaign import CampaignContact, CampaignLog, CampaignType, ContactStatus
 
 
+def _mask_phone(phone: str | None) -> str:
+    if not phone:
+        return ""
+    return f"{phone[:3]}***{phone[-4:]}" if len(phone) >= 7 else "***"
+
+
 class SupabaseClient:
     def __init__(self) -> None:
         settings = get_settings()
@@ -179,6 +185,55 @@ class SupabaseClient:
             contacts = bucket["contacts"] or 1
             bucket["conversion_rate"] = round(bucket["converted"] / contacts, 4)
         return grouped
+
+    async def demo_snapshot(self) -> dict:
+        contacts = await self._request(
+            "GET", "campaign_contacts",
+            params={
+                "business_id": f"eq.{self.business_id}",
+                "select": "phone,campaign_type,status,attempts,outcome,last_attempt_at",
+                "order": "last_attempt_at.desc.nullslast",
+                "limit": "6",
+            },
+        )
+        logs = await self._request(
+            "GET", "campaign_logs",
+            params={
+                "business_id": f"eq.{self.business_id}",
+                "select": "campaign_type,contact_phone,action_type,outcome,created_at",
+                "order": "created_at.desc",
+                "limit": "6",
+            },
+        )
+        return {
+            "tables": {
+                "campaign_contacts": {
+                    "sample": [
+                        {
+                            "phone": _mask_phone(row.get("phone")),
+                            "campaign_type": row.get("campaign_type"),
+                            "status": row.get("status"),
+                            "attempts": row.get("attempts"),
+                            "outcome": row.get("outcome"),
+                            "last_attempt_at": row.get("last_attempt_at"),
+                        }
+                        for row in contacts
+                    ],
+                },
+                "campaign_logs": {
+                    "sample": [
+                        {
+                            "phone": _mask_phone(row.get("contact_phone")),
+                            "campaign_type": row.get("campaign_type"),
+                            "action_type": row.get("action_type"),
+                            "outcome": row.get("outcome"),
+                            "created_at": row.get("created_at"),
+                        }
+                        for row in logs
+                    ],
+                },
+            }
+        }
 
     async def health_check(self) -> dict:
         try:

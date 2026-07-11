@@ -57,6 +57,13 @@ async def browser_demo_run(request: Request):
     return await demo_run(request)
 
 
+@app.get("/demo/snapshot")
+async def demo_snapshot():
+    if not get_settings().demo_mode_enabled:
+        return {"enabled": False}
+    return await supabase_client.demo_snapshot()
+
+
 @app.post("/campaigns/{campaign_type}/run", dependencies=[Depends(require_admin_key)])
 async def run_campaign(campaign_type: CampaignType):
     runner = RUNNERS[campaign_type.value]()
