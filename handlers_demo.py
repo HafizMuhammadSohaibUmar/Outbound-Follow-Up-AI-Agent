@@ -29,21 +29,22 @@ HTML = """
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LeadPilot AI Outbound Follow-Up Agent</title>
   <style>
-    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; }
-    body { margin: 0; background: #f4f7fb; color: #111827; }
-    header { background: #fff; border-bottom: 1px solid #dbe3ef; padding: 36px 7vw; }
-    .pill { display:inline-block; background:#dff5ef; color:#087566; padding:8px 14px; border-radius:999px; font-weight:800; }
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; --gold:#C49A1A; --teal:#4FB39F; --cream:#F5F0E4; --muted:#9A9080; --card:#18160E; --line:rgba(255,255,255,0.08); }
+    body { margin: 0; background: radial-gradient(circle at top left, rgba(47,143,126,0.16), transparent 34%), #0A0908; color: var(--cream); }
+    header { background: rgba(17,16,9,0.92); border-bottom: 1px solid var(--line); padding: 38px 7vw; }
+    .pill { display:inline-block; background:rgba(79,179,159,0.12); color:var(--teal); border:1px solid rgba(79,179,159,0.28); padding:8px 14px; border-radius:999px; font-weight:800; }
     h1 { font-size: clamp(34px, 4vw, 58px); margin: 12px 0; letter-spacing:0; }
-    p { color:#5b6678; font-size: 20px; }
+    p { color:var(--muted); font-size: 18px; line-height:1.65; }
     main { display:grid; grid-template-columns: minmax(0, 1fr) minmax(0, .95fr); gap:28px; padding:36px 7vw; }
-    section { background:#fff; border:1px solid #dbe3ef; border-radius:8px; padding:28px; }
+    section { background:linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015)), var(--card); border:1px solid var(--line); border-radius:18px; padding:28px; }
     label { display:block; font-weight:800; margin:16px 0 8px; font-size:18px; }
-    input, select, textarea { width:100%; box-sizing:border-box; border:1px solid #d5deea; border-radius:7px; padding:14px 16px; font-size:18px; }
+    input, select, textarea { width:100%; box-sizing:border-box; border:1px solid var(--line); border-radius:8px; padding:14px 16px; font-size:18px; background:#0f0e09; color:var(--cream); }
     textarea { min-height:120px; resize:vertical; }
-    button { margin-top:18px; background:#0f8b7d; color:#fff; border:0; border-radius:7px; padding:14px 20px; font-weight:800; font-size:17px; cursor:pointer; }
+    button { margin-top:18px; background:var(--teal); color:#0A0908; border:0; border-radius:7px; padding:14px 20px; font-weight:800; font-size:17px; cursor:pointer; }
     pre { background:#0f172a; color:#f8fafc; border-radius:8px; padding:22px; white-space:pre-wrap; overflow:auto; font-size:15px; }
-    .card { border:1px solid #dbe3ef; border-radius:8px; padding:18px; margin-top:14px; }
-    .tag { display:inline-block; background:#dff5ef; color:#087566; border-radius:999px; padding:6px 12px; font-weight:800; }
+    .card { border:1px solid var(--line); border-radius:12px; padding:18px; margin-top:14px; background:#111009; }
+    .tag { display:inline-block; background:rgba(79,179,159,0.12); color:var(--teal); border:1px solid rgba(79,179,159,0.28); border-radius:999px; padding:6px 12px; font-weight:800; }
+    .explain { margin-top: 14px; padding: 14px; border: 1px solid rgba(196,154,26,0.22); border-left: 3px solid var(--gold); border-radius: 10px; background: rgba(196,154,26,0.08); color: var(--muted); font-size: 14px; }
     @media (max-width: 900px) { main { grid-template-columns: 1fr; padding:24px; } header { padding:30px 24px; } }
   </style>
 </head>
@@ -52,6 +53,7 @@ HTML = """
     <span class="pill">Demo mode</span>
     <h1>LeadPilot AI Outbound Follow-Up Agent</h1>
     <p>Run estimate, re-engagement, seasonal voice, and no-show recovery campaigns without sending real messages.</p>
+    <div class="explain">The demo forces dry-run execution. It shows the message or voice-call handoff that would be produced after suppression, deduplication, and campaign rules are applied.</div>
   </header>
   <main>
     <section>

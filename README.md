@@ -9,15 +9,41 @@ AI-powered outbound follow-up automation for home service businesses. The agent 
 | Seasonal Campaign | HVAC, pest control, and roofing seasonal dates | Voice | Call past customers before busy seasons |
 | No-Show Recovery | 2 hours and 24 hours after a missed appointment | SMS | Reschedule without sounding pushy |
 
-## Related Agents
+## Architecture
 
-| Agent | Name | Status |
+```text
+APScheduler / Manual Run
+  -> CampaignRunner subclass
+  -> FSM reader or manual contact input
+  -> calling-window + suppression + cycle dedup checks
+  -> LiteLLM/Mistral message generation
+  -> Twilio SMS, dry-run preview, or Agent 1 outbound voice handoff
+  -> Supabase campaign_contacts + campaign_logs
+
+Customer SMS Reply
+  -> FastAPI /twilio/sms-reply
+  -> STOP suppression, accept, decline, or unclear outcome
+  -> campaign contact update + owner alert when converted
+```
+
+## What It Proves
+
+- Multiple campaign types can share one safe runner contract.
+- Outreach can be governed by consent, attempt limits, deduplication, and local calling windows.
+- Seasonal voice campaigns can reuse the self-hosted Agent 1 voice stack instead of paid voice orchestration.
+- Dry-run mode can demonstrate campaign behavior without contacting real customers.
+
+## Related AI Systems
+
+| System | Purpose | Links |
 | --- | --- | --- |
-| 1 | LeadPilot AI Voice Agent | Live voice intake and qualification |
-| 2 | LeadPilot AI Missed Call Text-Back Agent | Missed-call SMS recovery |
-| 3 | LeadPilot AI Outbound Follow-Up Agent | This repo |
-| 4 | LeadPilot AI Review Request Agent | Review request automation |
-| 5 | Customer Reactivation Agent | Planned |
+| LeadPilot AI Voice Agent | Inbound phone agent for call qualification, emergency detection, and lead logging. | [Live](https://leadpilotai.sohaib.systems/) · [Repo](https://github.com/HafizMuhammadSohaibUmar/LeadPilotAI) |
+| Missed Call Text-Back AI Agent | SMS recovery and qualification after no-answer or busy calls. | [Live](https://missed-call-text-back-ai-agent.sohaib.systems/demo) · [Repo](https://github.com/HafizMuhammadSohaibUmar/Missed-Call-Text-Back-AI-Agent) |
+| Outbound Follow-Up AI Agent | Estimate, no-show, re-engagement, and seasonal follow-up campaigns. | [Live](https://outbound-followup-ai-agent.sohaib.systems/demo) · [Repo](https://github.com/HafizMuhammadSohaibUmar/Outbound-Follow-Up-AI-Agent) |
+| AI Auto Review Request Agent | Sentiment-aware post-job review and private feedback routing. | [Live](https://ai-review-agent.sohaib.systems/demo) · [Repo](https://github.com/HafizMuhammadSohaibUmar/AI-Auto-Review-Request-Agent) |
+| Web Chat Lead Qualifier Agent | Embeddable RAG chat widget for contractor websites. | [Live](https://web-chat-lead-qualifier-agent.sohaib.systems/demo) · [Repo](https://github.com/HafizMuhammadSohaibUmar/Web-Chat-Lead-Qualifier-Agent) |
+| Personal AI Agent | Local task, planning, and calendar assistant with LangGraph tools. | [Live](https://personal-ai-agent.sohaib.systems/) · [Repo](https://github.com/HafizMuhammadSohaibUmar/Personal-AI-Agent) |
+| Invoxia AI for ERPNext | Frappe/ERPNext assistant layer for navigation, voice input foundations, and live ERP answers. | [Live](https://invoxia.sohaib.systems/) · [Repo](https://github.com/HafizMuhammadSohaibUmar/InvoxiaAI-ERPNext) |
 
 ## Why Vapi And Bland AI Are Skipped
 
@@ -127,7 +153,7 @@ On the DigitalOcean droplet:
 
 ```bash
 cd /opt
-git clone https://github.com/HafizMuhammadSohaibUmar/AI-Outbound-Follow-Up-Agent.git outbound-followup-agent
+git clone https://github.com/HafizMuhammadSohaibUmar/Outbound-Follow-Up-AI-Agent.git outbound-followup-agent
 cd outbound-followup-agent
 cp .env.example .env
 nano .env
