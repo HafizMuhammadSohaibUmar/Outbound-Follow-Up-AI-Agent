@@ -1,38 +1,23 @@
 # LeadPilot AI Outbound Follow-Up Agent
 
-AI-powered outbound follow-up automation for home service businesses. The agent runs four campaign types from one FastAPI service:
+AI-powered follow-up campaign automation for home-service businesses.
 
-| Campaign | Trigger | Channel | Goal |
-| --- | --- | --- | --- |
-| Estimate Follow-Up | 48 hours after a pending estimate, then day 5 | SMS | Recover unscheduled estimates |
-| Job Completion Re-Engagement | 30/85/150 days after a completed job | SMS | Bring previous customers back |
-| Seasonal Campaign | HVAC, pest control, and roofing seasonal dates | Voice | Call past customers before busy seasons |
-| No-Show Recovery | 2 hours and 24 hours after a missed appointment | SMS | Reschedule without sounding pushy |
+The agent runs four campaign types from one FastAPI service: estimate follow-up, job-completion re-engagement, seasonal voice outreach, and no-show recovery. It applies suppression, deduplication, timezone-aware contact windows, campaign-specific attempt rules, Twilio delivery, Supabase logging, and dry-run previews for safe testing.
 
-## Architecture
+## Live Demo
 
-```text
-APScheduler / Manual Run
-  -> CampaignRunner subclass
-  -> FSM reader or manual contact input
-  -> calling-window + suppression + cycle dedup checks
-  -> LiteLLM/Mistral message generation
-  -> Twilio SMS, dry-run preview, or LeadPilotAI Agent outbound voice handoff
-  -> Supabase campaign_contacts + campaign_logs
+- Live demo: `https://outbound-followup-ai-agent.sohaib.systems/demo`
+- Health check: `https://outbound-followup-ai-agent.sohaib.systems/health`
+- Repository: `https://github.com/HafizMuhammadSohaibUmar/Outbound-Follow-Up-AI-Agent`
 
-Customer SMS Reply
-  -> FastAPI /twilio/sms-reply
-  -> STOP suppression, accept, decline, or unclear outcome
-  -> campaign contact update + owner alert when converted
-```
+How to evaluate the demo:
 
-## Engineering Points
-
-- Four campaign types share one runner contract while keeping their own timing and attempt rules.
-- Suppression, cycle deduplication, and timezone-aware contact windows are applied before outreach.
-- SMS campaigns and seasonal voice campaigns use separate channel adapters behind the same campaign log model.
-- Seasonal voice reuses the existing [LeadPilotAI Agent](https://github.com/HafizMuhammadSohaibUmar/LeadPilotAI) media-stream pipeline instead of duplicating voice infrastructure.
-- Dry-run execution shows the exact message or voice handoff that would be produced without contacting real customers.
+1. Select each campaign type.
+2. Change the customer/service context.
+3. Run the campaign and inspect the generated preview.
+4. Confirm SMS campaigns produce customer message previews.
+5. Confirm seasonal campaigns show the outbound voice handoff to the LeadPilot AI Voice Agent pipeline.
+6. Review the safe database preview for masked campaign activity.
 
 ## Related AI Systems
 
@@ -46,58 +31,117 @@ Customer SMS Reply
 | Personal AI Agent | Self-hosted task, planning, and local-calendar assistant with LangGraph tools. | [Live Demo](https://personal-ai-agent.sohaib.systems/) | [Repository](https://github.com/HafizMuhammadSohaibUmar/Personal-AI-Agent) |
 | Invoxia AI for ERPNext | Frappe/ERPNext assistant layer for navigation, voice input foundations, and live ERP answers. | [Live Demo](https://invoxia.sohaib.systems/) | [Repository](https://github.com/HafizMuhammadSohaibUmar/InvoxiaAI-ERPNext) |
 
-## Voice Campaign Design
+## What This Agent Does
 
-Three campaign types in this service use SMS. The seasonal campaign is different: it can launch outbound voice calls for HVAC, pest control, and roofing outreach.
+- Finds or accepts eligible campaign contacts.
+- Runs campaign-specific timing and attempt rules.
+- Applies STOP suppression before outreach.
+- Prevents duplicate outreach within a campaign cycle.
+- Enforces client-local calling windows.
+- Generates personalized SMS through LiteLLM/Mistral.
+- Sends Twilio SMS or returns dry-run previews.
+- Hands seasonal voice campaigns to the LeadPilot AI Voice Agent pipeline.
+- Logs contacts and campaign actions in Supabase.
+- Supports pause, resume, manual run, metrics, and reply outcome webhooks.
 
-Instead of adding a separate hosted voice-orchestration provider, the seasonal voice path reuses the existing LeadPilotAI Agent voice pipeline:
+## Campaign Types
 
-Twilio outbound call -> Twilio Media Streams -> Deepgram STT -> LiteLLM -> ElevenLabs Flash TTS.
+| Campaign | Trigger | Channel | Goal |
+| --- | --- | --- | --- |
+| Estimate Follow-Up | 48 hours after a pending estimate, then day 5 | SMS | Recover unscheduled estimates |
+| Job Completion Re-Engagement | 30 days after completion, 85 days for pest control, 150 days for HVAC | SMS | Bring previous customers back |
+| Seasonal Campaign | HVAC, pest control, and roofing seasonal dates | Voice | Reactivate past customers before busy seasons |
+| No-Show Recovery | 2 hours and 24 hours after a missed appointment | SMS | Reschedule without sounding pushy |
 
-`integrations/outbound_call_service.py` checks that the LeadPilotAI Agent  repo is available through `LeadPilotAI AGENT_REPO_PATH` and starts outbound Twilio calls that point to `LeadPilotAI AGENT_PUBLIC_BASE_URL/voice`. In a standalone deployment, the [LeadPilotAI Agent](https://github.com/HafizMuhammadSohaibUmar/LeadPilotAI) voice modules can be vendored into this repo, but the default setup avoids duplicating working voice code.
-
-## Endpoints
-
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `GET` | `/health` | Database/Twilio/dry-run health |
-| `GET` | `/demo` | Safe browser demo |
-| `POST` | `/demo/run` | Dry-run campaign trigger |
-| `POST` | `/campaigns/{type}/run` | Run one campaign now |
-| `POST` | `/campaigns/{type}/pause` | Pause a campaign |
-| `POST` | `/campaigns/{type}/resume` | Resume a campaign |
-| `GET` | `/campaigns/metrics` | Conversion metrics per campaign |
-| `POST` | `/voice/outbound` | Redirect handoff to [LeadPilotAI Agent](https://github.com/HafizMuhammadSohaibUmar/LeadPilotAI) voice webhook |
-| `POST` | `/twilio/sms-reply` | Customer reply outcome webhook |
-
-Campaign type values:
+## Architecture
 
 ```text
-estimate_followup
-job_reengagement
-seasonal
-noshow_recovery
+APScheduler or Manual Trigger
+  |
+  v
+CampaignRunner subclass
+  |
+  +--> Jobber or Housecall Pro read-only reader
+  +--> suppression check
+  +--> campaign-cycle deduplication
+  +--> timezone calling-window check
+  +--> LiteLLM/Mistral personalization
+  +--> Twilio SMS, dry-run preview, or outbound voice handoff
+  +--> Supabase campaign_contacts + campaign_logs
+
+Customer SMS Reply
+  |
+  v
+/twilio/sms-reply
+  |
+  +--> STOP suppression
+  +--> accept, decline, or unclear outcome
+  +--> contact status update
+  +--> owner alert when converted
 ```
 
-## Supabase
+## Voice Campaign Design
 
-Run `db/migrations/001_init.sql` in the same Supabase project used by the other agents. The migration creates:
+Most campaigns in this service are SMS-first because the message is short and transactional. Seasonal campaigns can use voice because the campaign is broader reactivation across past customers.
 
-- `campaign_contacts`
-- `campaign_logs`
-- `campaign_state`
-- shared `suppression_list`
+The voice path does not use a paid orchestration layer. It reuses the LeadPilot AI Voice Agent pipeline:
 
-The suppression table uses `phone_number` for compatibility with Agent 2, which already owns the shared opt-out list.
+```text
+Twilio outbound call
+  -> LeadPilot AI Voice Agent /voice
+  -> Twilio Media Streams
+  -> Deepgram STT
+  -> LiteLLM
+  -> ElevenLabs or Twilio speech response
+```
 
-## Local Run
+`integrations/outbound_call_service.py` is the boundary between this campaign service and the voice agent.
+
+## API Surface
+
+| Route | Purpose |
+| --- | --- |
+| `GET /health` | Database, Twilio, and dry-run health |
+| `GET /demo` | Human-facing safe campaign demo |
+| `POST /demo/run` | Dry-run campaign trigger |
+| `POST /campaigns/{type}/run` | Run one campaign manually |
+| `POST /campaigns/{type}/pause` | Pause a campaign |
+| `POST /campaigns/{type}/resume` | Resume a campaign |
+| `GET /campaigns/metrics` | Conversion metrics per campaign |
+| `POST /voice/outbound` | Outbound voice handoff endpoint |
+| `POST /twilio/sms-reply` | Customer reply outcome webhook |
+
+## Tech Stack
+
+- FastAPI and Uvicorn
+- APScheduler
+- Twilio SMS and outbound voice call initiation
+- LiteLLM with Mistral
+- Supabase PostgREST
+- Pydantic Settings
+- pytz timezone handling
+- Docker and Docker Compose
+- Pytest and pytest-asyncio
+
+## Production Features
+
+- Four campaign runners behind one shared contract
+- Campaign-level deduplication
+- Shared STOP suppression with the missed-call agent
+- Timezone-aware contact windows
+- Pause and resume API
+- Metrics endpoint by campaign type
+- Read-only Jobber and Housecall Pro reader boundaries
+- Dry-run mode for safe evaluation
+- Protected manual controls through `X-LeadPilot-Key`
+- Reply outcome processing for accept, decline, unclear, and STOP replies
+
+## Local Setup
 
 ```bash
-python -m venv .venv
-.venv\Scripts\activate
+cp .env.example .env
 pip install -r requirements.txt
-copy .env.example .env
-uvicorn main:app --reload --port 8003
+uvicorn main:app --port 8003
 ```
 
 Open:
@@ -106,41 +150,62 @@ Open:
 http://localhost:8003/demo
 ```
 
-## Demo Mode
+## Database Setup
 
-The browser demo runs in dry-run mode. It produces the SMS text or seasonal voice-call handoff that the campaign runner would create after suppression, deduplication, and campaign rules are applied, without sending real messages or placing calls.
-
-## Admin Protection
-
-Manual campaign control endpoints require:
+Run the migration in Supabase SQL Editor:
 
 ```text
-X-LeadPilot-Key: your_campaign_admin_api_key
+db/migrations/001_init.sql
 ```
 
-This protects `/campaigns/{type}/run`, `/pause`, and `/resume` when the app is exposed publicly.
+It creates:
 
-## Reply Outcomes
+- `campaign_contacts`
+- `campaign_logs`
+- `campaign_state`
+- shared `suppression_list`
 
-Set the Twilio messaging webhook to:
+## Important Environment Variables
 
-```text
-https://your-domain.example.com/twilio/sms-reply
+```env
+PUBLIC_BASE_URL=
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_PHONE_NUMBER=
+OWNER_PHONE_NUMBER=
+MISTRAL_API_KEY=
+SUPABASE_URL=
+SUPABASE_KEY=
+CLIENT_TIMEZONE=America/New_York
+DRY_RUN=true
+CAMPAIGN_ADMIN_API_KEY=
+AGENT1_PUBLIC_BASE_URL=
 ```
 
-Customer replies are classified as:
+## Tests
 
-- `STOP` style replies: shared suppression list
-- booking/approval replies: converted contact, owner alert
-- decline replies: declined contact
-- unclear replies: marked for follow-up
+```bash
+pytest tests/ -v
+```
 
-## Production Notes
+The tests cover:
 
-- Calling windows are timezone-aware: Monday-Friday 9am-7pm and Saturday 10am-5pm in `CLIENT_TIMEZONE`.
-- Campaign deduplication prevents contacting the same phone twice per campaign cycle.
-- STOP suppression is shared with the missed-call agent.
-- Jobber and Housecall Pro readers are read-only.
-- Seasonal calls use the self-hosted [LeadPilotAI Agent](https://github.com/HafizMuhammadSohaibUmar/LeadPilotAI) voice pipeline instead of paid voice orchestration.
+- campaign happy paths
+- suppression paths
+- scheduler registration
+- demo behavior
+- security and outcome handling
 
+## Deployment
 
+```bash
+docker compose up --build -d
+```
+
+Run with `DRY_RUN=true` until Twilio credentials, opt-out handling, campaign lists, and owner testing are fully configured.
+
+## Current Demo Limitations
+
+- The browser demo does not send live SMS or place live calls.
+- Seasonal voice preview requires the LeadPilot AI Voice Agent to be deployed for real outbound calls.
+- Jobber and Housecall Pro readers need real API credentials for automated campaign discovery.

@@ -43,23 +43,43 @@ HTML = """
     button { margin-top:18px; background:var(--teal); color:#0A0908; border:0; border-radius:7px; padding:14px 20px; font-weight:800; font-size:17px; cursor:pointer; }
     pre { background:#0f172a; color:#f8fafc; border-radius:8px; padding:22px; white-space:pre-wrap; overflow:auto; font-size:15px; }
     .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:12px; margin-top:12px; background:#111009; }
-    table { width:100%; border-collapse:collapse; min-width:520px; }
-    th, td { text-align:left; border-bottom:1px solid var(--line); padding:10px 12px; font-size:14px; vertical-align:top; }
+    table { width:100%; border-collapse:collapse; min-width:620px; table-layout:fixed; }
+    th, td { text-align:left; border-bottom:1px solid var(--line); padding:10px 12px; font-size:14px; vertical-align:top; word-break:break-word; }
     th { color:var(--cream); background:rgba(255,255,255,0.04); }
     td { color:var(--muted); }
     .empty { color:var(--muted); border:1px dashed var(--line); border-radius:12px; padding:14px; margin-top:10px; }
     .card { border:1px solid var(--line); border-radius:12px; padding:18px; margin-top:14px; background:#111009; }
     .tag { display:inline-block; background:rgba(79,179,159,0.12); color:var(--teal); border:1px solid rgba(79,179,159,0.28); border-radius:999px; padding:6px 12px; font-weight:800; }
     .explain { margin-top: 14px; padding: 14px; border: 1px solid rgba(196,154,26,0.22); border-left: 3px solid var(--gold); border-radius: 10px; background: rgba(196,154,26,0.08); color: var(--muted); font-size: 14px; }
-    @media (max-width: 900px) { main { grid-template-columns: 1fr; padding:24px; } header { padding:30px 24px; } }
+    .metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:18px; max-width:1180px; }
+    .metric { border:1px solid var(--line); border-radius:8px; background:rgba(255,255,255,0.035); padding:14px; }
+    .metric strong { display:block; color:var(--cream); margin-bottom:6px; }
+    .metric span { display:block; color:var(--muted); font-size:14px; line-height:1.5; }
+    footer { border-top:1px solid var(--line); padding:24px 7vw; color:var(--muted); background:#0A0908; }
+    .footer-top { display:grid; grid-template-columns:minmax(0,1.4fr) 1fr 1fr; gap:18px; max-width:1180px; margin:0 auto 18px; }
+    .footer-brand a { color:var(--cream); font-size:24px; font-weight:900; text-decoration:none; }
+    .footer-brand span { color:var(--gold); }
+    .footer-brand p, .footer-col a, .footer-bottom { color:var(--muted); font-size:14px; }
+    .footer-col h4 { margin:0 0 8px; color:var(--cream); }
+    .footer-links-list { list-style:none; padding:0; margin:0; display:grid; gap:6px; }
+    .footer-links-list a { text-decoration:none; }
+    .footer-bottom { max-width:1180px; margin:0 auto; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; border-top:1px solid var(--line); padding-top:16px; }
+    .footer-bottom-links { display:flex; gap:12px; flex-wrap:wrap; }
+    .footer-bottom a { color:var(--cream); text-decoration:none; }
+    @media (max-width: 900px) { main { grid-template-columns: 1fr; padding:24px; } header { padding:30px 24px; } .metrics, .footer-top { grid-template-columns:1fr; } footer { padding:24px; } }
   </style>
 </head>
 <body>
   <header>
     <span class="pill">Demo mode</span>
     <h1>LeadPilot AI Outbound Follow-Up Agent</h1>
-    <p>Run estimate, re-engagement, seasonal voice, and no-show recovery campaigns without sending real messages.</p>
-    <div class="explain">The demo forces dry-run execution. It shows the message or voice-call handoff that would be produced after suppression, deduplication, and campaign rules are applied.</div>
+    <p>Run estimate follow-up, re-engagement, seasonal voice, and no-show recovery campaigns through the same campaign runners used by the backend scheduler.</p>
+    <div class="metrics">
+      <div class="metric"><strong>Problem solved</strong><span>Service businesses forget timely follow-ups after estimates, no-shows, completed jobs, and seasonal opportunities.</span></div>
+      <div class="metric"><strong>How it works</strong><span>Campaign runners apply suppression, deduplication, calling windows, and campaign-specific rules before producing SMS or voice-call output.</span></div>
+      <div class="metric"><strong>How to evaluate</strong><span>Switch campaign types and watch the output change from SMS copy to the Agent 1 outbound voice handoff for seasonal campaigns.</span></div>
+    </div>
+    <div class="explain">The demo forces dry-run execution. It shows what would be sent or handed to the voice pipeline after safety checks are applied.</div>
   </header>
   <main>
     <section>
@@ -91,6 +111,32 @@ HTML = """
       <div id="snapshot">Loading sanitized table preview...</div>
     </section>
   </main>
+  <footer>
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="https://sohaib.systems/" target="_blank" rel="noreferrer">Sohaib<span>.</span></a>
+        <p>AI Solutions Engineer building practical automation systems for home-service lead capture, follow-up, and customer communication.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Project</h4>
+        <ul class="footer-links-list">
+          <li><a href="https://github.com/HafizMuhammadSohaibUmar/Outbound-Follow-Up-AI-Agent" target="_blank" rel="noreferrer">GitHub Repository</a></li>
+          <li><a href="/health" target="_blank" rel="noreferrer">Health Check</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Connect</h4>
+        <ul class="footer-links-list">
+          <li><a href="https://sohaib.systems/portfolio.html" target="_blank" rel="noreferrer">Project Portfolio</a></li>
+          <li><a href="mailto:hafizmuhammadsohaibumar@gmail.com">Email</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>2026 Hafiz Muhammad Sohaib Umar</span>
+      <div class="footer-bottom-links"><a href="https://sohaib.systems/" target="_blank" rel="noreferrer">sohaib.systems</a><a href="https://github.com/HafizMuhammadSohaibUmar" target="_blank" rel="noreferrer">GitHub</a></div>
+    </div>
+  </footer>
   <script>
     const result = document.getElementById("result");
     const cards = document.getElementById("cards");
