@@ -26,28 +26,31 @@ Customer SMS Reply
   -> campaign contact update + owner alert when converted
 ```
 
-## What It Proves
+## Engineering Signals
 
-- Multiple campaign types can share one safe runner contract.
-- Outreach can be governed by consent, attempt limits, deduplication, and local calling windows.
-- Seasonal voice campaigns can reuse the self-hosted Agent 1 voice stack instead of paid voice orchestration.
-- Dry-run mode can demonstrate campaign behavior without contacting real customers.
+- Four campaign types share one runner contract while keeping their own timing and attempt rules.
+- Suppression, cycle deduplication, and timezone-aware contact windows are applied before outreach.
+- SMS campaigns and seasonal voice campaigns use separate channel adapters behind the same campaign log model.
+- Seasonal voice reuses the existing Agent 1 media-stream pipeline instead of duplicating voice infrastructure.
+- Dry-run execution shows the exact message or voice handoff that would be produced without contacting real customers.
 
 ## Related AI Systems
 
-| System | Purpose | Links |
-| --- | --- | --- |
-| LeadPilot AI Voice Agent | Inbound phone agent for call qualification, emergency detection, and lead logging. | [Live](https://leadpilotai.sohaib.systems/) · [Repo](https://github.com/HafizMuhammadSohaibUmar/LeadPilotAI) |
-| Missed Call Text-Back AI Agent | SMS recovery and qualification after no-answer or busy calls. | [Live](https://missed-call-text-back-ai-agent.sohaib.systems/demo) · [Repo](https://github.com/HafizMuhammadSohaibUmar/Missed-Call-Text-Back-AI-Agent) |
-| Outbound Follow-Up AI Agent | Estimate, no-show, re-engagement, and seasonal follow-up campaigns. | [Live](https://outbound-followup-ai-agent.sohaib.systems/demo) · [Repo](https://github.com/HafizMuhammadSohaibUmar/Outbound-Follow-Up-AI-Agent) |
-| AI Auto Review Request Agent | Sentiment-aware post-job review and private feedback routing. | [Live](https://ai-review-agent.sohaib.systems/demo) · [Repo](https://github.com/HafizMuhammadSohaibUmar/AI-Auto-Review-Request-Agent) |
-| Web Chat Lead Qualifier Agent | Embeddable RAG chat widget for contractor websites. | [Live](https://web-chat-lead-qualifier-agent.sohaib.systems/demo) · [Repo](https://github.com/HafizMuhammadSohaibUmar/Web-Chat-Lead-Qualifier-Agent) |
-| Personal AI Agent | Local task, planning, and calendar assistant with LangGraph tools. | [Live](https://personal-ai-agent.sohaib.systems/) · [Repo](https://github.com/HafizMuhammadSohaibUmar/Personal-AI-Agent) |
-| Invoxia AI for ERPNext | Frappe/ERPNext assistant layer for navigation, voice input foundations, and live ERP answers. | [Live](https://invoxia.sohaib.systems/) · [Repo](https://github.com/HafizMuhammadSohaibUmar/InvoxiaAI-ERPNext) |
+| System | Purpose | Live Demo | Repository |
+| --- | --- | --- | --- |
+| LeadPilot AI Voice Agent | Inbound phone agent for call qualification, emergency detection, and lead logging. | [Live Demo](https://leadpilotai.sohaib.systems/) | [Repository](https://github.com/HafizMuhammadSohaibUmar/LeadPilotAI) |
+| Missed Call Text-Back AI Agent | SMS recovery and qualification after no-answer or busy calls. | [Live Demo](https://missed-call-text-back-ai-agent.sohaib.systems/demo) | [Repository](https://github.com/HafizMuhammadSohaibUmar/Missed-Call-Text-Back-AI-Agent) |
+| Outbound Follow-Up AI Agent | Estimate, no-show, re-engagement, and seasonal follow-up campaigns. | [Live Demo](https://outbound-followup-ai-agent.sohaib.systems/demo) | **This repo** |
+| AI Auto Review Request Agent | Sentiment-aware post-job review and private feedback routing. | [Live Demo](https://ai-review-agent.sohaib.systems/demo) | [Repository](https://github.com/HafizMuhammadSohaibUmar/AI-Auto-Review-Request-Agent) |
+| Web Chat Lead Qualifier Agent | Embeddable RAG chat widget for contractor websites. | [Live Demo](https://web-chat-lead-qualifier-agent.sohaib.systems/demo) | [Repository](https://github.com/HafizMuhammadSohaibUmar/Web-Chat-Lead-Qualifier-Agent) |
+| Personal AI Agent | Self-hosted task, planning, and local-calendar assistant with LangGraph tools. | [Live Demo](https://personal-ai-agent.sohaib.systems/) | [Repository](https://github.com/HafizMuhammadSohaibUmar/Personal-AI-Agent) |
+| Invoxia AI for ERPNext | Frappe/ERPNext assistant layer for navigation, voice input foundations, and live ERP answers. | [Live Demo](https://invoxia.sohaib.systems/) | [Repository](https://github.com/HafizMuhammadSohaibUmar/InvoxiaAI-ERPNext) |
 
-## Why Vapi And Bland AI Are Skipped
+## Voice Campaign Design
 
-This project intentionally avoids paid hosted voice-orchestration tools. For a self-funded demo, Vapi and Bland AI add recurring per-minute or plan-based costs that are not needed to prove the engineering. Seasonal voice calls instead reuse the same self-hosted pipeline from Agent 1:
+Three campaign types in this service use SMS. The seasonal campaign is different: it can launch outbound voice calls for HVAC, pest control, and roofing outreach.
+
+Instead of adding a separate hosted voice-orchestration provider, the seasonal voice path reuses the existing Agent 1 voice pipeline:
 
 Twilio outbound call -> Twilio Media Streams -> Deepgram STT -> LiteLLM -> ElevenLabs Flash TTS.
 
@@ -103,16 +106,9 @@ Open:
 http://localhost:8003/demo
 ```
 
-## Safe Demo Mode
+## Demo Mode
 
-Use this for public demos:
-
-```env
-DRY_RUN=true
-DEMO_MODE_ENABLED=true
-```
-
-Dry-run mode generates SMS and voice-call previews without sending real Twilio messages or placing real calls. This is the recommended setting for Twilio trial accounts and recruiter testing.
+The browser demo runs in dry-run mode. It produces the SMS text or seasonal voice-call handoff that the campaign runner would create after suppression, deduplication, and campaign rules are applied, without sending real messages or placing calls.
 
 ## Admin Protection
 
@@ -147,31 +143,4 @@ Customer replies are classified as:
 - Jobber and Housecall Pro readers are read-only.
 - Seasonal calls use the self-hosted Agent 1 voice pipeline instead of paid voice orchestration.
 
-## Deployment
 
-On the DigitalOcean droplet:
-
-```bash
-cd /opt
-git clone https://github.com/HafizMuhammadSohaibUmar/Outbound-Follow-Up-AI-Agent.git outbound-followup-agent
-cd outbound-followup-agent
-cp .env.example .env
-nano .env
-docker compose up --build -d
-curl http://localhost:8003/health
-```
-
-Caddy example:
-
-```caddyfile
-outbound-followup-agent.sohaib.systems {
-    reverse_proxy 127.0.0.1:8003
-}
-```
-
-Then:
-
-```bash
-caddy validate --config /etc/caddy/Caddyfile
-systemctl reload caddy
-```
