@@ -1,9 +1,11 @@
 """LeadPilot AI Outbound Follow-Up Agent."""
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse, Response
+from fastapi.staticfiles import StaticFiles
 
 from campaigns.estimate_followup import EstimateFollowUp
 from campaigns.job_reengagement import JobCompletionReEngagement
@@ -40,6 +42,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="LeadPilot AI Outbound Follow-Up Agent", lifespan=lifespan)
+app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
 
 
 @app.get("/")
