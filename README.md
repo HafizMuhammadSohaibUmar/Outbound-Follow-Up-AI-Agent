@@ -17,7 +17,7 @@ APScheduler / Manual Run
   -> FSM reader or manual contact input
   -> calling-window + suppression + cycle dedup checks
   -> LiteLLM/Mistral message generation
-  -> Twilio SMS, dry-run preview, or Agent 1 outbound voice handoff
+  -> Twilio SMS, dry-run preview, or LeadPilotAI Agent outbound voice handoff
   -> Supabase campaign_contacts + campaign_logs
 
 Customer SMS Reply
@@ -26,12 +26,12 @@ Customer SMS Reply
   -> campaign contact update + owner alert when converted
 ```
 
-## Engineering Signals
+## Engineering Points
 
 - Four campaign types share one runner contract while keeping their own timing and attempt rules.
 - Suppression, cycle deduplication, and timezone-aware contact windows are applied before outreach.
 - SMS campaigns and seasonal voice campaigns use separate channel adapters behind the same campaign log model.
-- Seasonal voice reuses the existing Agent 1 media-stream pipeline instead of duplicating voice infrastructure.
+- Seasonal voice reuses the existing [LeadPilotAI Agent](https://github.com/HafizMuhammadSohaibUmar/LeadPilotAI) media-stream pipeline instead of duplicating voice infrastructure.
 - Dry-run execution shows the exact message or voice handoff that would be produced without contacting real customers.
 
 ## Related AI Systems
@@ -50,11 +50,11 @@ Customer SMS Reply
 
 Three campaign types in this service use SMS. The seasonal campaign is different: it can launch outbound voice calls for HVAC, pest control, and roofing outreach.
 
-Instead of adding a separate hosted voice-orchestration provider, the seasonal voice path reuses the existing Agent 1 voice pipeline:
+Instead of adding a separate hosted voice-orchestration provider, the seasonal voice path reuses the existing LeadPilotAI Agent voice pipeline:
 
 Twilio outbound call -> Twilio Media Streams -> Deepgram STT -> LiteLLM -> ElevenLabs Flash TTS.
 
-`integrations/outbound_call_service.py` checks that the Agent 1 repo is available through `AGENT1_REPO_PATH` and starts outbound Twilio calls that point to `AGENT1_PUBLIC_BASE_URL/voice`. In a standalone deployment, the Agent 1 voice modules can be vendored into this repo, but the default setup avoids duplicating working voice code.
+`integrations/outbound_call_service.py` checks that the LeadPilotAI Agent  repo is available through `LeadPilotAI AGENT_REPO_PATH` and starts outbound Twilio calls that point to `LeadPilotAI AGENT_PUBLIC_BASE_URL/voice`. In a standalone deployment, the [LeadPilotAI Agent](https://github.com/HafizMuhammadSohaibUmar/LeadPilotAI) voice modules can be vendored into this repo, but the default setup avoids duplicating working voice code.
 
 ## Endpoints
 
@@ -67,7 +67,7 @@ Twilio outbound call -> Twilio Media Streams -> Deepgram STT -> LiteLLM -> Eleve
 | `POST` | `/campaigns/{type}/pause` | Pause a campaign |
 | `POST` | `/campaigns/{type}/resume` | Resume a campaign |
 | `GET` | `/campaigns/metrics` | Conversion metrics per campaign |
-| `POST` | `/voice/outbound` | Redirect handoff to Agent 1 voice webhook |
+| `POST` | `/voice/outbound` | Redirect handoff to [LeadPilotAI Agent](https://github.com/HafizMuhammadSohaibUmar/LeadPilotAI) voice webhook |
 | `POST` | `/twilio/sms-reply` | Customer reply outcome webhook |
 
 Campaign type values:
@@ -141,6 +141,6 @@ Customer replies are classified as:
 - Campaign deduplication prevents contacting the same phone twice per campaign cycle.
 - STOP suppression is shared with the missed-call agent.
 - Jobber and Housecall Pro readers are read-only.
-- Seasonal calls use the self-hosted Agent 1 voice pipeline instead of paid voice orchestration.
+- Seasonal calls use the self-hosted [LeadPilotAI Agent](https://github.com/HafizMuhammadSohaibUmar/LeadPilotAI) voice pipeline instead of paid voice orchestration.
 
 
