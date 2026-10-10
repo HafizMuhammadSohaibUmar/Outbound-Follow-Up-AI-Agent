@@ -1,0 +1,92 @@
+{
+  "id": "OutboundError20261010",
+  "name": "Outbound Follow-Up - Error Handler",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "nodes": [
+    {
+      "id": "error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "log-error",
+      "name": "Log Error",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "create",
+        "tableId": "outbound_workflow_errors",
+        "dataToSend": "defineBelow",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "workflow_name",
+              "fieldValue": "={{ $json.workflow?.name ?? \"unknown\" }}"
+            },
+            {
+              "fieldId": "node_name",
+              "fieldValue": "={{ $json.execution?.lastNodeExecuted ?? \"trigger\" }}"
+            },
+            {
+              "fieldId": "error_message",
+              "fieldValue": "={{ $json.execution?.error?.message ?? $json.trigger?.error?.message ?? \"unknown\" }}"
+            },
+            {
+              "fieldId": "execution_id",
+              "fieldValue": "={{ $json.execution?.id ?? \"\" }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        240,
+        -80
+      ]
+    },
+    {
+      "id": "alert-owner",
+      "name": "Alert Owner",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channel": "REPLACE_WITH_SLACK_CHANNEL",
+        "text": "={{ 'Outbound campaign failure in ' + ($json.workflow?.name ?? 'unknown') + ' at ' + ($json.execution?.lastNodeExecuted ?? 'trigger') + ': ' + ($json.execution?.error?.message ?? 'unknown error') }}"
+      },
+      "position": [
+        240,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Log Error",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Alert Owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

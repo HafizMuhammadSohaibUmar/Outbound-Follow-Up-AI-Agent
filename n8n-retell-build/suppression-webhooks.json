@@ -1,0 +1,142 @@
+{
+  "id": "OutboundSuppress20261010",
+  "name": "Outbound Follow-Up - STOP and DNC Intake",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "nodes": [
+    {
+      "id": "setup-notes",
+      "name": "Setup Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "parameters": {
+        "width": 520,
+        "height": 250,
+        "content": "Configure Twilio inbound SMS to /webhook/outbound-sms-reply and Retell call_analyzed webhook to /webhook/outbound-voice-status. Verify vendor signatures at the reverse proxy or a dedicated verification service before production. Both routes update the same suppression table."
+      },
+      "position": [
+        -300,
+        -300
+      ]
+    },
+    {
+      "id": "twilio-reply-webhook",
+      "name": "Twilio Reply Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "outbound-sms-reply",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "position": [
+        -200,
+        -60
+      ]
+    },
+    {
+      "id": "voice-status-webhook",
+      "name": "Voice Status Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "outbound-voice-status",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "position": [
+        -200,
+        100
+      ]
+    },
+    {
+      "id": "parse-stop-or-dnc",
+      "name": "Parse STOP or DNC",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const p = $input.first().json.body ?? $input.first().json;\n  const text = String(p.Body ?? p.body ?? p.transcript ?? p.call?.transcript ?? '').trim();\n  const phone = p.From ?? p.from_number ?? p.call?.to_number;\n  const vendorDnc = Boolean(p.dnc || p.do_not_call || p.call_analysis?.custom_analysis_data?.do_not_call || p.call?.call_analysis?.custom_analysis_data?.do_not_call);\n  const stop = /^(stop|unsubscribe|cancel|quit|end|opt\\s*out)$/i.test(text);\n  if (!phone || (!stop && !vendorDnc)) return [];\n  return [{ json: { phone_number: phone, reason: vendorDnc ? 'vendor_dnc' : 'STOP', source: p.CallSid ? 'twilio' : 'voice_vendor', raw_event_id: p.CallSid ?? p.call_id ?? p.call?.call_id ?? null } }];"
+      },
+      "position": [
+        60,
+        20
+      ]
+    },
+    {
+      "id": "upsert-shared-suppression",
+      "name": "Upsert Shared Suppression",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "upsert",
+        "tableId": "outbound_suppression",
+        "dataToSend": "defineBelow",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "phone_number",
+              "fieldValue": "={{ $json.phone_number }}"
+            },
+            {
+              "fieldId": "reason",
+              "fieldValue": "={{ $json.reason }}"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "={{ $json.source }}"
+            },
+            {
+              "fieldId": "raw_event_id",
+              "fieldValue": "={{ $json.raw_event_id }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        320,
+        20
+      ]
+    }
+  ],
+  "connections": {
+    "Twilio Reply Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse STOP or DNC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice Status Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse STOP or DNC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse STOP or DNC": {
+      "main": [
+        [
+          {
+            "node": "Upsert Shared Suppression",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

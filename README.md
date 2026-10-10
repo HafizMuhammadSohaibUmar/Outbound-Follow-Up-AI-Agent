@@ -209,3 +209,7 @@ Run with `DRY_RUN=true` until Twilio credentials, opt-out handling, campaign lis
 - The browser demo does not send live SMS or place live calls.
 - Seasonal voice preview requires the LeadPilot AI Voice Agent to be deployed for real outbound calls.
 - Jobber and Housecall Pro readers need real API credentials for automated campaign discovery.
+
+## Retell + n8n Client Deployment
+
+This repository also includes a separate inactive Retell + n8n implementation of the four campaign types. See [`n8n-retell-build/README.md`](n8n-retell-build/README.md) for workflow imports, Retell configuration, suppression handling, Supabase schema, and testing instructions. The original custom-coded campaign service remains unchanged.

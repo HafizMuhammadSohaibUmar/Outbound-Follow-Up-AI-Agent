@@ -1,0 +1,335 @@
+{
+  "agent_id": "",
+  "channel": "voice",
+  "last_modification_timestamp": 0,
+  "agent_name": "Outbound Seasonal Follow-Up AI",
+  "version_description": "Retell voice layer for the separate n8n outbound follow-up implementation.",
+  "response_engine": {
+    "conversation_flow_id": "conversation_flow_outbound_seasonal_import",
+    "version": 0,
+    "type": "conversation-flow"
+  },
+  "language": "en-US",
+  "webhook_url": "https://n8n.sohaib.systems/webhook/outbound-voice-status",
+  "webhook_events": [
+    "call_analyzed"
+  ],
+  "data_storage_setting": "everything",
+  "contact_memory_config": {
+    "enable_update": false,
+    "enable_read": false
+  },
+  "opt_in_signed_url": false,
+  "version": 0,
+  "base_version": 0,
+  "assigned_tags": [],
+  "is_published": false,
+  "version_title": "Outbound Seasonal Follow-Up - Retell + n8n",
+  "post_call_analysis_model": "gpt-4.1",
+  "post_call_analysis_data": [
+    {
+      "name": "customer_name",
+      "type": "string",
+      "description": "Intended customer name or empty."
+    },
+    {
+      "name": "service_interest",
+      "type": "string",
+      "description": "Seasonal service discussed."
+    },
+    {
+      "name": "callback_preference",
+      "type": "string",
+      "description": "Requested callback day/time or empty."
+    },
+    {
+      "name": "do_not_call",
+      "type": "boolean",
+      "description": "True when the recipient requests STOP, removal, unsubscribe, or no further calls."
+    },
+    {
+      "name": "call_outcome",
+      "type": "enum",
+      "description": "Final campaign outcome.",
+      "choices": [
+        "Interested - callback requested",
+        "Not interested",
+        "Call back later",
+        "Wrong number",
+        "Do not call",
+        "No answer",
+        "Incomplete"
+      ]
+    }
+  ],
+  "voice_id": "retell-Della",
+  "voice_temperature": 0.7,
+  "voice_speed": 1,
+  "enable_dynamic_voice_speed": true,
+  "volume": 1,
+  "enable_expressive_mode": true,
+  "expressive_emotion_tags": [
+    "empathetic",
+    "happy",
+    "pause",
+    "curious"
+  ],
+  "max_call_duration_ms": 480000,
+  "interruption_sensitivity": 0.8,
+  "allow_user_dtmf": true,
+  "user_dtmf_options": {},
+  "conversationFlow": {
+    "conversation_flow_id": "conversation_flow_outbound_seasonal_import",
+    "version": 0,
+    "last_modification_timestamp": 0,
+    "global_prompt": "## Role\nYou are {{agent_name}}, the outbound AI assistant for {{business_name}}. You are calling a past customer about a relevant {{service_type}} seasonal reminder. Your goal is to confirm you reached the intended customer, explain the reason for the call, learn whether they are interested, and capture a callback request for the human team.\n\n## Context supplied by n8n\n- Customer: {{customer_name}}\n- Business: {{business_name}}\n- Seasonal service: {{service_type}}\n- Callback expectation: {{callback_expectation}}\n\n## Speaking style\n- Be concise, warm, and transparent that you are an AI assistant.\n- Ask one question at a time. Do not pressure the customer.\n- Never invent prices, discounts, availability, prior-job details, policies, or appointment times.\n\n## Mandatory rules\n- At the beginning, identify {{business_name}}, disclose that you are an AI assistant, ask for {{customer_name}}, and ask whether it is a convenient time for a brief service reminder.\n- If it is the wrong person or wrong number, apologize, mark the result accordingly, and end.\n- If the customer says stop, unsubscribe, do not call, remove me, or equivalent, apologize, confirm they will not receive further campaign calls, set do_not_call=true, and end immediately.\n- Never claim an appointment is booked. You may only request a human callback.\n- If interested, collect their preferred callback day/time and briefly confirm the service of interest.\n- If not interested, thank them and end without objection handling.\n- Do not request payment, account credentials, sensitive identifiers, or medical information.\n- Never mention Retell, n8n, APIs, databases, nodes, or internal automation.",
+    "nodes": [
+      {
+        "id": "seasonal_greeting",
+        "name": "Identity and Permission",
+        "type": "conversation",
+        "display_position": {
+          "x": 300,
+          "y": 260
+        },
+        "skippable": false,
+        "start_speaker": "agent",
+        "instruction": {
+          "type": "prompt",
+          "text": "Say: \"Hi, may I speak with {{customer_name}}? This is {{agent_name}}, the AI assistant calling from {{business_name}}. Is now an okay time for a brief seasonal service reminder?\""
+        },
+        "edges": [
+          {
+            "id": "g1",
+            "destination_node_id": "explain_reason",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The intended customer confirms identity and agrees to continue."
+            }
+          },
+          {
+            "id": "g2",
+            "destination_node_id": "callback_later",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The intended customer is busy but does not opt out."
+            }
+          },
+          {
+            "id": "g3",
+            "destination_node_id": "wrong_number_end",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "This is the wrong person or wrong number."
+            }
+          },
+          {
+            "id": "g4",
+            "destination_node_id": "dnc_end",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The person asks to stop, unsubscribe, not be called, or be removed."
+            }
+          }
+        ]
+      },
+      {
+        "id": "explain_reason",
+        "name": "Seasonal Reminder",
+        "type": "conversation",
+        "display_position": {
+          "x": 760,
+          "y": 260
+        },
+        "skippable": false,
+        "instruction": {
+          "type": "prompt",
+          "text": "Explain in one sentence that {{business_name}} is checking whether they need {{service_type}} this season. Ask whether they would like a team member to follow up. Do not quote a price or imply availability."
+        },
+        "edges": [
+          {
+            "id": "r1",
+            "destination_node_id": "collect_callback",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The customer is interested or wants more information."
+            }
+          },
+          {
+            "id": "r2",
+            "destination_node_id": "declined_end",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The customer is not interested."
+            }
+          },
+          {
+            "id": "r3",
+            "destination_node_id": "dnc_end",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The customer requests no further calls or messages."
+            }
+          }
+        ]
+      },
+      {
+        "id": "collect_callback",
+        "name": "Capture Callback Preference",
+        "type": "conversation",
+        "display_position": {
+          "x": 1220,
+          "y": 180
+        },
+        "skippable": false,
+        "instruction": {
+          "type": "prompt",
+          "text": "Ask for the preferred callback day and time. Confirm the service interest and preference. State that this is only a callback request and no appointment has been booked."
+        },
+        "edges": [
+          {
+            "id": "c1",
+            "destination_node_id": "interested_end",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The callback preference and service interest are confirmed."
+            }
+          },
+          {
+            "id": "c2",
+            "destination_node_id": "dnc_end",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The customer requests no further contact."
+            }
+          }
+        ]
+      },
+      {
+        "id": "callback_later",
+        "name": "Not a Convenient Time",
+        "type": "conversation",
+        "display_position": {
+          "x": 760,
+          "y": 520
+        },
+        "skippable": false,
+        "instruction": {
+          "type": "prompt",
+          "text": "Apologize for the interruption. Ask whether they prefer a human callback at another day/time. Do not repeatedly persuade them."
+        },
+        "edges": [
+          {
+            "id": "b1",
+            "destination_node_id": "interested_end",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "They provide a callback preference."
+            }
+          },
+          {
+            "id": "b2",
+            "destination_node_id": "declined_end",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "They decline further discussion without opting out."
+            }
+          },
+          {
+            "id": "b3",
+            "destination_node_id": "dnc_end",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "They ask not to be contacted again."
+            }
+          }
+        ]
+      },
+      {
+        "id": "interested_end",
+        "name": "Interested Close",
+        "type": "end",
+        "display_position": {
+          "x": 1680,
+          "y": 100
+        },
+        "skippable": false,
+        "speak_during_execution": true,
+        "instruction": {
+          "type": "prompt",
+          "text": "Thank them. Confirm that the team will receive the callback request and that no appointment is booked yet. Say goodbye."
+        }
+      },
+      {
+        "id": "declined_end",
+        "name": "Declined Close",
+        "type": "end",
+        "display_position": {
+          "x": 1220,
+          "y": 520
+        },
+        "skippable": false,
+        "speak_during_execution": true,
+        "instruction": {
+          "type": "prompt",
+          "text": "Thank them for their time and say goodbye without further persuasion."
+        }
+      },
+      {
+        "id": "wrong_number_end",
+        "name": "Wrong Number Close",
+        "type": "end",
+        "display_position": {
+          "x": 760,
+          "y": 760
+        },
+        "skippable": false,
+        "speak_during_execution": true,
+        "instruction": {
+          "type": "prompt",
+          "text": "Apologize for the mistake, say the number will be marked for review, and end the call."
+        }
+      },
+      {
+        "id": "dnc_end",
+        "name": "Do Not Call Close",
+        "type": "end",
+        "display_position": {
+          "x": 1220,
+          "y": 760
+        },
+        "skippable": false,
+        "speak_during_execution": true,
+        "instruction": {
+          "type": "prompt",
+          "text": "Apologize, confirm the do-not-call request, and end immediately."
+        }
+      }
+    ],
+    "start_node_id": "seasonal_greeting",
+    "start_speaker": "agent",
+    "tools": [],
+    "model_choice": {
+      "type": "cascading",
+      "model": "gpt-5.1",
+      "high_priority": false
+    },
+    "default_dynamic_variables": {
+      "agent_name": "Seasonal Service Assistant",
+      "customer_name": "Customer",
+      "business_name": "Acme Home Services",
+      "service_type": "seasonal home service",
+      "callback_expectation": "during normal business hours"
+    },
+    "knowledge_base_ids": [],
+    "kb_config": {
+      "top_k": 3,
+      "filter_score": 0.6
+    },
+    "begin_tag_display_position": {
+      "x": 0,
+      "y": 260
+    },
+    "is_published": false
+  }
+}

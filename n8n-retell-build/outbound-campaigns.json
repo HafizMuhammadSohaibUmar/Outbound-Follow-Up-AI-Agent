@@ -1,0 +1,645 @@
+{
+  "id": "OutboundRtN8n20261010",
+  "name": "Outbound Follow-Up - Retell + n8n (inactive until configured)",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/New_York",
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "nodes": [
+    {
+      "id": "setup-and-cost-notes",
+      "name": "Setup and Cost Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "parameters": {
+        "width": 700,
+        "height": 430,
+        "content": "## Configure before activation\nCredentials: Jobber OAuth2 or Housecall Pro API, Supabase, Twilio, Retell API, and Slack in the separate error workflow. Replace every REPLACE_WITH_* value. Run schema.sql. Select exactly one FSM provider in Read FSM Records. Keep inactive until consent, quiet hours, caller ID, opt-out, and test numbers are verified.\n\n## Voice vendor quote (2026-10-10)\nAssumption: US low-volume pilot, approximately 1,000 seasonal voice minutes/month, no enterprise commitment or add-ons. Retell selected as the lowest clearly verifiable all-in PAYG configuration: $0.0866/min using $0.055 infrastructure + $0.015 platform voice + $0.0016 GPT-5 nano + $0.015 Retell telephony, plus $0.005 per batch dial. Bland starts at $0.14/min before carrier; Vapi charges hosting plus model, voice, transcriber, and telephony. Re-quote all vendors before renewing the client retainer. Voice and telephony are client-billed."
+      },
+      "position": [
+        -500,
+        -520
+      ]
+    },
+    {
+      "id": "estimate-every-6-hours",
+      "name": "Estimate - Every 6 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "position": [
+        -320,
+        -120
+      ],
+      "notes": "estimate_followup"
+    },
+    {
+      "id": "reengagement-daily-08-00",
+      "name": "Reengagement - Daily 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        -320,
+        20
+      ],
+      "notes": "job_reengagement"
+    },
+    {
+      "id": "seasonal-daily-09-00",
+      "name": "Seasonal - Daily 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        -320,
+        160
+      ],
+      "notes": "seasonal"
+    },
+    {
+      "id": "no-show-every-2-hours",
+      "name": "No Show - Every 2 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 2
+            }
+          ]
+        }
+      },
+      "position": [
+        -320,
+        300
+      ],
+      "notes": "noshow_recovery"
+    },
+    {
+      "id": "set-estimate-source",
+      "name": "Set Estimate Source",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "source",
+              "name": "source",
+              "value": "estimate_followup",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        -80,
+        -120
+      ]
+    },
+    {
+      "id": "set-reengagement-source",
+      "name": "Set Reengagement Source",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "source",
+              "name": "source",
+              "value": "job_reengagement",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        -80,
+        20
+      ]
+    },
+    {
+      "id": "set-seasonal-source",
+      "name": "Set Seasonal Source",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "source",
+              "name": "source",
+              "value": "seasonal",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        -80,
+        160
+      ]
+    },
+    {
+      "id": "set-no-show-source",
+      "name": "Set No Show Source",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "source",
+              "name": "source",
+              "value": "noshow_recovery",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        -80,
+        300
+      ]
+    },
+    {
+      "id": "campaign-timing-rules",
+      "name": "Campaign Timing Rules",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const source = $input.first().json.source;\n  const now = new Date();\n  const rules = {\n    estimate_followup: 'Run every 6 hours. Select pending estimates first at 48 hours, then once more on day 5. Maximum two SMS attempts.',\n    job_reengagement: 'Run daily at 08:00. Select general completed jobs at 30 days, pest-control jobs at 85 days, and HVAC/AC/furnace/heating jobs at 150 days. SMS only.',\n    seasonal: 'Run daily at 09:00, but send only on configured launch dates: HVAC 04-01 and 09-15; pest 03-01, 06-01, and 09-01; roofing 03-15. Select customers active in the previous 24 months. Voice via Retell only.',\n    noshow_recovery: 'Run every 2 hours. Select missed appointments for SMS at 2 hours and once more at 24 hours. Maximum two attempts.',\n  };\n  const dates = { '04-01': 'HVAC tune-up', '09-15': 'HVAC tune-up', '03-01': 'pest control service', '06-01': 'pest control service', '09-01': 'pest control service', '03-15': 'roof inspection' };\n  const mmdd = `${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;\n  if (source === 'seasonal' && !dates[mmdd]) return [];\n  return [{ json: { source, rule: rules[source], seasonal_service: dates[mmdd] || null, evaluated_at: now.toISOString() } }];"
+      },
+      "position": [
+        180,
+        80
+      ]
+    },
+    {
+      "id": "read-fsm-records",
+      "name": "Read FSM Records",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "REPLACE_WITH_FSM_READ_ENDPOINT",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({provider:'REPLACE_WITH_JOBBER_OR_HOUSECALLPRO', campaign:$json.source, rule:$json.rule, read_only:true}) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "position": [
+        420,
+        80
+      ]
+    },
+    {
+      "id": "normalize-fsm-candidates",
+      "name": "Normalize FSM Candidates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const meta = $('Campaign Timing Rules').first().json;\n  const payload = $input.first().json;\n  const rows = payload.data?.quotes?.nodes || payload.data?.jobs?.nodes || payload.data?.clients?.nodes || payload.data?.visits?.nodes || payload.data || payload.jobs || payload.estimates || payload.customers || [];\n  const list = Array.isArray(rows) ? rows : [];\n  const phone = (r) => r.phone || r.phone_number || r.phones?.[0]?.number || r.client?.phones?.[0]?.number || r.customer?.phones?.[0]?.number;\n  const name = (r) => r.name || r.customer_name || r.client?.name || r.customer?.name || 'there';\n  return list.map((r) => ({ json: {\n    business_id: 'REPLACE_WITH_BUSINESS_ID', campaign_type: meta.source,\n    phone: phone(r), name: name(r), source_id: r.id,\n    service_type: r.title || r.service_type || meta.seasonal_service || 'home service',\n    amount: r.total || r.amount || null, rule: meta.rule, fetched_at: meta.evaluated_at,\n  }})).filter((i) => /^\\+[1-9]\\d{7,14}$/.test(String(i.json.phone || '')));"
+      },
+      "position": [
+        660,
+        80
+      ]
+    },
+    {
+      "id": "check-shared-suppression",
+      "name": "Check Shared Suppression",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "getAll",
+        "tableId": "outbound_suppression",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "phone_number",
+              "condition": "eq",
+              "keyValue": "={{ $json.phone }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        900,
+        80
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "decide-suppression",
+      "name": "Decide Suppression",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const candidate = $('Normalize FSM Candidates').item.json;\n  const rows = $input.all().map(i => i.json).filter(r => r.phone_number);\n  return [{ json: { ...candidate, suppressed: rows.some(r => r.phone_number === candidate.phone) } }];"
+      },
+      "position": [
+        1140,
+        80
+      ]
+    },
+    {
+      "id": "allowed-to-send-",
+      "name": "Allowed to Send?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.suppressed }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        1380,
+        80
+      ]
+    },
+    {
+      "id": "campaign-router",
+      "name": "Campaign Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json.campaign_type === 'seasonal' ? 1 : 0 }}",
+        "options": {}
+      },
+      "position": [
+        1620,
+        80
+      ]
+    },
+    {
+      "id": "compose-deterministic-sms",
+      "name": "Compose Deterministic SMS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const c = $input.first().json;\n  const business = 'REPLACE_WITH_BUSINESS_NAME';\n  const owner = 'REPLACE_WITH_OWNER_FIRST_NAME';\n  const messages = {\n    estimate_followup: `Hi ${c.name}, this is ${owner} with ${business}. Just checking in on the ${c.service_type} estimate we sent. Would you like us to help get it scheduled? Reply STOP to opt out.`,\n    job_reengagement: `Hi ${c.name}, this is ${owner} with ${business}. We helped with your ${c.service_type} before and wanted to see if you need anything scheduled. Reply STOP to opt out.`,\n    noshow_recovery: `Hi ${c.name}, this is ${owner} with ${business}. Sorry we missed you for the appointment. Would you like us to find another time? Reply STOP to opt out.`,\n  };\n  return [{ json: { ...c, message: messages[c.campaign_type] || '' } }];"
+      },
+      "position": [
+        1860,
+        -60
+      ]
+    },
+    {
+      "id": "send-sms-twilio-",
+      "name": "Send SMS (Twilio)",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "sms",
+        "operation": "send",
+        "from": "REPLACE_WITH_TWILIO_E164",
+        "to": "={{ $json.phone }}",
+        "message": "={{ $json.message }}"
+      },
+      "position": [
+        2100,
+        -60
+      ]
+    },
+    {
+      "id": "start-seasonal-call-retell-",
+      "name": "Start Seasonal Call (Retell)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.retellai.com/v2/create-phone-call",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({from_number:'REPLACE_WITH_RETELL_E164',to_number:$json.phone,override_agent_id:'REPLACE_WITH_RETELL_AGENT_ID',retell_llm_dynamic_variables:{customer_name:$json.name,service_type:$json.service_type,business_name:'REPLACE_WITH_BUSINESS_NAME'}}) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "position": [
+        1860,
+        220
+      ]
+    },
+    {
+      "id": "log-campaign-send",
+      "name": "Log Campaign Send",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "parameters": {
+        "resource": "row",
+        "operation": "create",
+        "tableId": "outbound_campaign_logs",
+        "dataToSend": "defineBelow",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "business_id",
+              "fieldValue": "={{ $('Decide Suppression').item.json.business_id }}"
+            },
+            {
+              "fieldId": "campaign_type",
+              "fieldValue": "={{ $('Decide Suppression').item.json.campaign_type }}"
+            },
+            {
+              "fieldId": "phone",
+              "fieldValue": "={{ $('Decide Suppression').item.json.phone }}"
+            },
+            {
+              "fieldId": "source_id",
+              "fieldValue": "={{ $('Decide Suppression').item.json.source_id }}"
+            },
+            {
+              "fieldId": "channel",
+              "fieldValue": "={{ $('Decide Suppression').item.json.campaign_type === 'seasonal' ? 'voice' : 'sms' }}"
+            },
+            {
+              "fieldId": "outcome",
+              "fieldValue": "sent"
+            },
+            {
+              "fieldId": "vendor_message_id",
+              "fieldValue": "={{ $json.sid ?? $json.call_id ?? \"\" }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        2340,
+        80
+      ]
+    }
+  ],
+  "connections": {
+    "Estimate - Every 6 Hours": {
+      "main": [
+        [
+          {
+            "node": "Set Estimate Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Estimate Source": {
+      "main": [
+        [
+          {
+            "node": "Campaign Timing Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reengagement - Daily 08:00": {
+      "main": [
+        [
+          {
+            "node": "Set Reengagement Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Reengagement Source": {
+      "main": [
+        [
+          {
+            "node": "Campaign Timing Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seasonal - Daily 09:00": {
+      "main": [
+        [
+          {
+            "node": "Set Seasonal Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Seasonal Source": {
+      "main": [
+        [
+          {
+            "node": "Campaign Timing Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Show - Every 2 Hours": {
+      "main": [
+        [
+          {
+            "node": "Set No Show Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set No Show Source": {
+      "main": [
+        [
+          {
+            "node": "Campaign Timing Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Campaign Timing Rules": {
+      "main": [
+        [
+          {
+            "node": "Read FSM Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read FSM Records": {
+      "main": [
+        [
+          {
+            "node": "Normalize FSM Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize FSM Candidates": {
+      "main": [
+        [
+          {
+            "node": "Check Shared Suppression",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Shared Suppression": {
+      "main": [
+        [
+          {
+            "node": "Decide Suppression",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide Suppression": {
+      "main": [
+        [
+          {
+            "node": "Allowed to Send?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Allowed to Send?": {
+      "main": [
+        [
+          {
+            "node": "Campaign Router",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Campaign Router": {
+      "main": [
+        [
+          {
+            "node": "Compose Deterministic SMS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Start Seasonal Call (Retell)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose Deterministic SMS": {
+      "main": [
+        [
+          {
+            "node": "Send SMS (Twilio)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send SMS (Twilio)": {
+      "main": [
+        [
+          {
+            "node": "Log Campaign Send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Seasonal Call (Retell)": {
+      "main": [
+        [
+          {
+            "node": "Log Campaign Send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
