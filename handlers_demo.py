@@ -60,6 +60,11 @@ HTML = """
     .card { border:1px solid var(--line); border-radius:12px; padding:18px; margin-top:14px; background:#111009; }
     .tag { display:inline-block; background:rgba(79,179,159,0.12); color:var(--teal); border:1px solid rgba(79,179,159,0.28); border-radius:999px; padding:6px 12px; font-weight:800; }
     .explain { margin-top: 14px; padding: 14px; border: 1px solid rgba(196,154,26,0.22); border-left: 3px solid var(--gold); border-radius: 10px; background: rgba(196,154,26,0.08); color: var(--muted); font-size: 14px; }
+    .implementation-mode { display: grid; gap: 12px; }
+    .implementation-mode strong { color: var(--cream); font-size: 15px; }
+    .implementation-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .implementation-actions a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 12px; border: 1px solid rgba(196,154,26,0.45); border-radius: 8px; background: rgba(196,154,26,0.12); color: var(--cream); text-decoration: none; font-weight: 800; }
+    .implementation-actions a:hover { background: var(--gold); color: #0A0908; }
     .metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:18px; max-width:1180px; }
     .metric { border:1px solid var(--line); border-radius:8px; background:rgba(255,255,255,0.035); padding:14px; }
     .metric strong { display:block; color:var(--cream); margin-bottom:6px; }
@@ -101,7 +106,7 @@ HTML = """
       <div class="metric"><strong>How to evaluate</strong><span>Switch campaign types and watch the output change from SMS copy to the LeadPilotAIAgent outbound voice handoff for seasonal campaigns.</span></div>
     </div>
     <div class="explain">The demo forces dry-run execution. It shows what would be sent or handed to the voice pipeline after safety checks are applied.</div>
-    <div class="explain"><strong>Two implementation modes:</strong> This page runs the custom-coded campaign service. The separate Retell + n8n build is a client-deployable alternative with documented workflows. <a href="https://github.com/HafizMuhammadSohaibUmar/Outbound-Follow-Up-AI-Agent/tree/main/n8n-retell-build" target="_blank" rel="noreferrer">View Build</a> · <a href="https://github.com/HafizMuhammadSohaibUmar/Outbound-Follow-Up-AI-Agent/blob/main/n8n-retell-build/README.md" target="_blank" rel="noreferrer">Read Technical Notes</a>. Production Retell, Twilio, Supabase, FSM, and Slack credentials are supplied by the client.</div>
+    <div class="explain implementation-mode"><strong>Two implementation modes</strong><span>This page runs the custom-coded campaign service. The separate Retell + n8n build is a client-deployable alternative with documented workflows.</span><div class="implementation-actions"><a href="https://github.com/HafizMuhammadSohaibUmar/Outbound-Follow-Up-AI-Agent/tree/main/n8n-retell-build" target="_blank" rel="noreferrer">View Build</a><a href="https://github.com/HafizMuhammadSohaibUmar/Outbound-Follow-Up-AI-Agent/blob/main/n8n-retell-build/README.md" target="_blank" rel="noreferrer">Read Technical Notes</a></div><span>Production Retell, Twilio, Supabase, FSM, and Slack credentials are supplied by the client.</span></div>
   </header>
   <main>
     <section>
