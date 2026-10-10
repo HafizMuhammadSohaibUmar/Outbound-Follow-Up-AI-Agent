@@ -101,6 +101,7 @@ HTML = """
       <div class="metric"><strong>How to evaluate</strong><span>Switch campaign types and watch the output change from SMS copy to the LeadPilotAIAgent outbound voice handoff for seasonal campaigns.</span></div>
     </div>
     <div class="explain">The demo forces dry-run execution. It shows what would be sent or handed to the voice pipeline after safety checks are applied.</div>
+    <div class="explain"><strong>Two implementation modes:</strong> This page runs the custom-coded campaign service. The separate Retell + n8n build is a client-deployable alternative with documented workflows. <a href="https://github.com/HafizMuhammadSohaibUmar/Outbound-Follow-Up-AI-Agent/tree/main/n8n-retell-build" target="_blank" rel="noreferrer">View Build</a> · <a href="https://github.com/HafizMuhammadSohaibUmar/Outbound-Follow-Up-AI-Agent/blob/main/n8n-retell-build/README.md" target="_blank" rel="noreferrer">Read Technical Notes</a>. Production Retell, Twilio, Supabase, FSM, and Slack credentials are supplied by the client.</div>
   </header>
   <main>
     <section>
