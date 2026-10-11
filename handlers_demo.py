@@ -144,7 +144,7 @@ HTML = """
     <div class="footer-top">
       <div class="footer-brand">
         <a href="https://sohaib.systems/" target="_blank" rel="noreferrer">Sohaib<span>.</span></a>
-        <p>AI Solutions Engineer building practical automation systems for service-business lead capture, follow-up, and customer communication.</p>
+        <p>AI Solutions Engineer building practical automation systems for home-service lead capture, follow-up, and customer communication.</p>
       </div>
       <div class="footer-col">
         <h4>Project</h4>
